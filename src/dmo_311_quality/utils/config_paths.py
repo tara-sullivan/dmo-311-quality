@@ -1,6 +1,7 @@
 # %%
 from pathlib import Path
 import os
+
 def find_project_root(start: Path | None = None) -> Path:
     """
     Walk upward from `start` (or cwd) until pyproject.toml is found.
@@ -20,10 +21,27 @@ def find_project_root(start: Path | None = None) -> Path:
 # %%
 
 ROOT_DIR = find_project_root()
+DATA_DIR = ROOT_DIR / 'data'
+RAW_DATA_DIR = DATA_DIR / 'raw'
 SRC_DIR = ROOT_DIR / 'src'
 
+ACS_DIR = RAW_DATA_DIR / '5-yr-ACS-2023'
+
+# %%
 if __name__ == '__main__':
-    
-    print(f'Project root: {ROOT_DIR}')
-    print(f'Source directory: {SRC_DIR}')
+
+    dir_dict = {
+        'ROOT_DIR': ROOT_DIR, 
+        'DATA_DIR': DATA_DIR, 
+        'RAW_DATA_DIR': RAW_DATA_DIR,
+        'SRC_DIR': SRC_DIR,
+        # 
+        'ACS_DIR': ACS_DIR
+    }
+    for name, dir in dir_dict.items():
+        if dir.is_dir() == False:
+            Path.mkdir(dir)
+        assert dir.is_dir()
+        print(f'{name}: {str(dir)}')
+
 # %%
