@@ -1,5 +1,8 @@
 .DS_Store
 
+# Data files — never commit datasets
+data/processed/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

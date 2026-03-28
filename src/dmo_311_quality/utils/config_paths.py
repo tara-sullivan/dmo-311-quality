@@ -23,6 +23,7 @@ def find_project_root(start: Path | None = None) -> Path:
 ROOT_DIR = find_project_root()
 DATA_DIR = ROOT_DIR / 'data'
 RAW_DATA_DIR = DATA_DIR / 'raw'
+PROCESSED_DATA_DIR = DATA_DIR / 'processed'
 SRC_DIR = ROOT_DIR / 'src'
 
 ACS_DIR = RAW_DATA_DIR / '5-yr-ACS-2023'
@@ -32,11 +33,12 @@ if __name__ == '__main__':
 
     dir_dict = {
         'ROOT_DIR': ROOT_DIR, 
-        'DATA_DIR': DATA_DIR, 
-        'RAW_DATA_DIR': RAW_DATA_DIR,
         'SRC_DIR': SRC_DIR,
         # 
-        'ACS_DIR': ACS_DIR
+        'DATA_DIR': DATA_DIR, 
+        'RAW_DATA_DIR': RAW_DATA_DIR,
+        'ACS_DIR': ACS_DIR,
+        'PROCESSED_DATA_DIR': PROCESSED_DATA_DIR
     }
     for name, dir in dir_dict.items():
         if dir.is_dir() == False:
