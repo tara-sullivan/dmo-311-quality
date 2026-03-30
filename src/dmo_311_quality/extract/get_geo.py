@@ -3,7 +3,6 @@ import geopandas as gpd
 import pandas as pd
 from shapely.geometry import shape
 
-from dmo_311_quality.utils.config_paths import PROCESSED_DATA_DIR
 from dmo_311_quality.utils.socrata import socrata_api_query
 
 # %%
@@ -88,10 +87,4 @@ if __name__ == '__main__':
     print(f'{len(gdf):,} rows | CRS: {gdf.crs}')
     print(gdf[['community_board', 'boro_cd']].head())
 
-    out_path = PROCESSED_DATA_DIR / 'cd_boundaries.parquet'
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    # Convert to plain DataFrame with WKT geometry so fastparquet can write it
-    df_out = pd.DataFrame(gdf)
-    df_out['geometry'] = gdf['geometry'].apply(lambda g: g.wkt)
-    df_out.to_parquet(out_path, index=False, engine='fastparquet')
-    print(f'Saved to {out_path}')
+# %%

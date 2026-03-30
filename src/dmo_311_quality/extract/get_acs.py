@@ -1,7 +1,7 @@
 # %%
 import pandas as pd
 
-from dmo_311_quality.utils.config_paths import ACS_DIR, PROCESSED_DATA_DIR
+from dmo_311_quality.utils.config_paths import ACS_DIR
 
 # %%
 # Maps the 2-letter borough prefix used in ACS GeoIDs to the borough name
@@ -139,7 +139,4 @@ if __name__ == '__main__':
     print(f'{len(df):,} rows | columns: {df.columns.tolist()}')
     print(df[['community_board', 'Pop_1E', 'Borough']].head())
 
-    out_path = PROCESSED_DATA_DIR / 'acs_cd_demographic.parquet'
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(out_path, index=False, engine='fastparquet')
-    print(f'Saved to {out_path}')
+# %%

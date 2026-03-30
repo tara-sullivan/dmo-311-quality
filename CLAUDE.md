@@ -20,12 +20,14 @@ output/figures/
 output/reports/
 
 ## Conventions
+- Python data pipeline with ETL stage separation (extract → transform → visualize)
 - All paths via `config_paths.py` — never hardcode
 - Write reusable functions; use `# %%` cell blocks throughout, and add a `if __name__ == '__main__'` test block immediately after each function definition so it can be run interactively in VS Code
-- Complete each ETL stage before starting the next
-- Primary geo: community_board. Primary dataset: erm2-nwe9, 2023+
 - In general, datasets shouldn't be saved to git. Please add appropriate filepaths to the `.gitignore`
-- Prefer fewer files; don't create a new module unless it serves a clearly distinct
+- Prefer fewer files; don't create a new module unless it serves a clearly distinct.
+- Prefer fewer functions; don't create redundant functions. 
+- Single orchestration file that runs all extract steps in order
+- All file saves (paths + actual I/O) live in `run_extract.py`, not in individual extract modules. Wrap everything in a `main()` function. Break `main()` into sub-functions per dataset, each with its own `if __name__ == '__main__'` test block
 
 ## Tasks
 Maintain TASKS.md. After every session, update it with what was completed and what's next.

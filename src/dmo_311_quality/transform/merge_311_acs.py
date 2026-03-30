@@ -3,6 +3,18 @@ import pandas as pd
 
 from dmo_311_quality.utils.config_paths import PROCESSED_DATA_DIR
 
+if __name__ == '__main__':
+    df_311 = pd.read_parquet(PROCESSED_DATA_DIR / '311_raw.parquet')
+    df_acs = pd.read_parquet(PROCESSED_DATA_DIR / 'acs_cd_demographic.parquet')
+
+# %%
+
+keep_row = (
+    df['']
+)
+
+# %%
+
 def merge_311_acs(
     df_311: pd.DataFrame,
     df_acs: pd.DataFrame,
@@ -19,7 +31,14 @@ def merge_311_acs(
     Returns:
         Merged DataFrame with all 311 rows and ACS columns appended.
     """
-    merged = df_311.merge(df_acs, on='community_board', how='left')
+    merged = pd.merge(
+        left=df_311,
+        right=df_acs, 
+        on='community_board', 
+        how='left',
+        validate='m:1',
+        indicator=True
+    )
 
     # Report on unmatched 311 community boards
     unmatched = merged[merged['Pop_1E'].isna()]['community_board'].unique()
@@ -33,8 +52,6 @@ def merge_311_acs(
 
 
 if __name__ == '__main__':
-    df_311 = pd.read_parquet(PROCESSED_DATA_DIR / '311_raw.parquet')
-    df_acs = pd.read_parquet(PROCESSED_DATA_DIR / 'acs_cd_demographic.parquet')
 
     merged = merge_311_acs(df_311, df_acs)
 
