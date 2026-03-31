@@ -6,9 +6,46 @@ from matplotlib.axes import Axes
 from dmo_311_quality.extract.get_geo import get_cd_boundaries
 from dmo_311_quality.utils.config_paths import PROCESSED_DATA_DIR, ROOT_DIR
 
+from dmo_311_quality.transform.merge_311_acs import merge_311_acs
 # %%
 FIGURES_DIR = ROOT_DIR / 'output' / 'figures'
 
+## %%
+if __name__ == '__main__':
+    df_311 = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_counts.parquet')
+    df_acs = pd.read_parquet(PROCESSED_DATA_DIR / 'acs_cd_demographic.parquet')
+
+    cd_gdf = get_cd_boundaries()
+
+# %%
+
+def sr_per_1k(df_311, df_acs, start_date: str = '2025-03', end_date: str = '2026-03') -> pd.DataFrame:
+    """Calculate 311 service requests per 1,000 residents."""
+    start = int(start_date.replace('-', ''))
+    end = int(end_date.replace('-', ''))
+    keep_row = df_311['year'] * 100 + df_311['month']
+    df = (
+        df_311.loc[keep_row.between(start, end)]
+        .groupby('community_board')['sr_count']
+        .sum()
+    )
+
+    df = merge_311_acs(df, df_acs, acs_cols=['Pop_1E'], validate='1:1')
+    df['sr_per_1k'] = df['sr_count'] / df['Pop_1E'] * 1000
+    return df
+
+if __name__ == '__main__':
+    df = sr_per_1k(df_311, df_acs)
+    
+# %%
+
+def gdf_per_1k(gdf, sr_df):
+    """Merge sr_per_1k values into the GeoDataFrame."""
+    gdf = gdf.merge(sr_df[['community_board', 'sr_per_1k', 'sr_count']], on='community_board', how='left')
+    return gdf
+
+if __name__ == '__main__':
+    gdf = gdf_per_1k(cd_gdf, df)
 
 # %%
 def make_choropleth(
@@ -27,6 +64,9 @@ def make_choropleth(
         ax: Matplotlib Axes to draw on.
         cmap: Colormap name (default: 'YlOrRd').
     """
+
+    # Base layer for missing data
+    gdf.plot(color='gray', edgecolor='white', linewidth=0.3, alpha=0.3, ax=ax) 
     gdf.plot(
         column=column,
         ax=ax,
@@ -43,32 +83,6 @@ def make_choropleth(
 
 # %%
 if __name__ == '__main__':
-    # Test make_choropleth with a simple column on the boundary GeoDataFrame
-    import numpy as np
-
-    gdf_test = get_cd_boundaries()
-    gdf_test['dummy'] = np.random.default_rng(seed=0).integers(0, 100, len(gdf_test))
-
-    fig, ax = plt.subplots(figsize=(5, 5))
-    make_choropleth(gdf_test, 'dummy', 'Dummy values (smoke test)', ax)
-    plt.tight_layout()
-    plt.show()
-
-
-# %%
-if __name__ == '__main__':
-    # Full pipeline: load data, merge, compute per-capita, plot and save
-    df_311 = pd.read_parquet(PROCESSED_DATA_DIR / '311_totals.parquet')
-    df_acs = pd.read_parquet(PROCESSED_DATA_DIR / 'acs_cd_demographic.parquet')
-
-    df = df_311.merge(df_acs[['community_board', 'Pop_1E']], on='community_board', how='left')
-    df['sr_count'] = pd.to_numeric(df['sr_count'])
-    df['Pop_1E'] = pd.to_numeric(df['Pop_1E'])
-    df['sr_per_1k'] = df['sr_count'] / df['Pop_1E'] * 1000
-
-    gdf = get_cd_boundaries()
-    gdf = gdf.merge(df, on='community_board', how='left')
-    gdf = gdf[gdf['sr_count'].notna()].copy()
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
     fig.suptitle(
@@ -86,3 +100,5 @@ if __name__ == '__main__':
     out_path = FIGURES_DIR / 'choropleth_311_acs.png'
     fig.savefig(out_path, dpi=150, bbox_inches='tight')
     print(f'Saved figure to {out_path}')
+
+# %%

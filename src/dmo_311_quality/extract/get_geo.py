@@ -7,7 +7,7 @@ from dmo_311_quality.utils.socrata import socrata_api_query
 
 # %%
 # NYC Open Data dataset ID for community district boundaries
-CD_BOUNDARIES_DATASET = '6ak9-vek3'
+CD_BOUNDARIES_DATASET = '5crt-au7u'
 
 # Maps the leading digit of boro_cd to the borough name used in community_board
 BORO_CD_MAP: dict[str, str] = {
@@ -56,7 +56,7 @@ if __name__ == '__main__':
 def get_cd_boundaries() -> gpd.GeoDataFrame:
     """Fetch NYC community district boundary polygons from NYC Open Data.
 
-    Queries dataset 6ak9-vek3, parses GeoJSON geometry, and builds a
+    Queries dataset 5crt-au7u, parses GeoJSON geometry, and builds a
     community_board join key matching the 311 dataset format.
 
     Returns:
