@@ -19,6 +19,7 @@ def get_sr_counts(
     geo: str = 'community_board',
     time: str | None = 'month',
     level: int = 0,
+    where_extra: str | None = None,
 ) -> pd.DataFrame:
     """Query aggregated 311 service request counts from NYC Open Data.
 
@@ -31,6 +32,8 @@ def get_sr_counts(
         level: Problem-type breakdown depth.
             0 = no breakdown (all complaint types aggregated).
             2 = complaint_type + descriptor.
+        where_extra: Optional additional SoQL WHERE clause (ANDed with date filter).
+            Use to filter by complaint_type, descriptor, etc.
 
     Returns:
         DataFrame with sr_count and grouping columns.
@@ -64,13 +67,16 @@ def get_sr_counts(
     select_str = f'{geo}{time_select}, count(*) as sr_count{problem_select}'
     group_str = f'{geo}{time_group}{problem_group}'
 
+    date_where = (
+        f"(date_trunc_ymd({_TIME_VAR}) >= '{start_date}')"
+        f" AND (date_trunc_ymd({_TIME_VAR}) <= '{end_date}')"
+    )
+    where_str = f"({date_where}) AND ({where_extra})" if where_extra else date_where
+
     df = socrata_api_query(
         dataset_id=DATASET_ID,
         select=select_str,
-        where=(
-            f"(date_trunc_ymd({_TIME_VAR}) >= '{start_date}')"
-            f" AND (date_trunc_ymd({_TIME_VAR}) <= '{end_date}')"
-        ),
+        where=where_str,
         group=group_str,
         timeout=480,
         limit=500000,

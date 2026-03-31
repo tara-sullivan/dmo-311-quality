@@ -102,3 +102,49 @@ if __name__ == '__main__':
     print(f'Saved figure to {out_path}')
 
 # %%
+if __name__ == '__main__':
+    df_potholes = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_potholes.parquet')
+
+    df_pot = sr_per_1k(df_potholes, df_acs)
+    gdf_pot = gdf_per_1k(cd_gdf, df_pot)
+
+    fig2, axes2 = plt.subplots(1, 2, figsize=(14, 6))
+    fig2.suptitle(
+        'Pothole Service Requests by Community District\n(Mar 2025 – Mar 2026)',
+        fontsize=13,
+        y=1.01,
+    )
+
+    make_choropleth(gdf_pot, 'sr_count', 'Total Pothole SRs', axes2[0])
+    make_choropleth(gdf_pot, 'sr_per_1k', 'Pothole SRs per 1,000 Residents', axes2[1])
+
+    plt.tight_layout()
+
+    out_path2 = FIGURES_DIR / 'choropleth_potholes.png'
+    fig2.savefig(out_path2, dpi=150, bbox_inches='tight')
+    print(f'Saved figure to {out_path2}')
+
+# %%
+if __name__ == '__main__':
+    df_rodents = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_rodents.parquet')
+
+    df_rod = sr_per_1k(df_rodents, df_acs)
+    gdf_rod = gdf_per_1k(cd_gdf, df_rod)
+
+    fig3, axes3 = plt.subplots(1, 2, figsize=(14, 6))
+    fig3.suptitle(
+        'Rodent Service Requests by Community District\n(Mar 2025 – Mar 2026)',
+        fontsize=13,
+        y=1.01,
+    )
+
+    make_choropleth(gdf_rod, 'sr_count', 'Total Rodent SRs', axes3[0])
+    make_choropleth(gdf_rod, 'sr_per_1k', 'Rodent SRs per 1,000 Residents', axes3[1])
+
+    plt.tight_layout()
+
+    out_path3 = FIGURES_DIR / 'choropleth_rodents.png'
+    fig3.savefig(out_path3, dpi=150, bbox_inches='tight')
+    print(f'Saved figure to {out_path3}')
+
+# %%

@@ -26,6 +26,9 @@ The study window is **March 1, 2023 – March 1, 2026**.
 
 ### Visualize
 - [x] `visualize/choropleth.py` — choropleth maps of total SR count and SR per 1,000 residents (QA/sanity check)
+- [x] `extract/get_311.py` — added `where_extra` param for complaint type/descriptor filtering
+- [x] `extract/run_extract.py` — added `extract_311_potholes()` (Street/Highway/Bridge/Tunnel pothole types)
+- [x] `visualize/choropleth.py` — added pothole choropleth `__main__` block → `choropleth_potholes.png`
 
 ---
 
@@ -44,5 +47,6 @@ The study window is **March 1, 2023 – March 1, 2026**.
 - [ ] Write narrative interpretation of findings
 
 ### Stretch
-- [ ] Extend analysis to complaint type (level=2 in `get_sr_counts`) — are certain complaint categories more skewed?
+- [x] Extend analysis to complaint type — pothole SRs extracted and mapped
+- [ ] Extend further to other complaint types as needed
 - [ ] Time trend analysis: has representation improved or worsened over the study window?
