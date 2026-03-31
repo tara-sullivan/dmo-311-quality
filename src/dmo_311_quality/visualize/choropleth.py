@@ -1,3 +1,4 @@
+# source /Users/tarasullivan/Documents/oda/dmo-311-quality/.venv/bin/activate
 # %%
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -86,7 +87,7 @@ if __name__ == '__main__':
 
     fig, axes = plt.subplots(1, 2, figsize=(14, 6))
     fig.suptitle(
-        '311 Service Requests by Community District\n(Mar 2023 – Mar 2026)',
+        '311 Service Requests by Community District\n(Mar 2025 – Mar 2026)',
         fontsize=13,
         y=1.01,
     )

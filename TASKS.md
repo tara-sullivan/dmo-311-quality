@@ -49,4 +49,5 @@ The study window is **March 1, 2023 – March 1, 2026**.
 ### Stretch
 - [x] Extend analysis to complaint type — pothole SRs extracted and mapped
 - [ ] Extend further to other complaint types as needed
-- [ ] Time trend analysis: has representation improved or worsened over the study window?
+- [ ] Time series analysis: monthly SR complaint trends by community board — has representation improved or worsened over the study window?
+- [ ] Evaluate additional complaint types and descriptors beyond potholes and rodents

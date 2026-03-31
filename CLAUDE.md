@@ -31,3 +31,8 @@ output/reports/
 
 ## Tasks
 Maintain TASKS.md. After every session, update it with what was completed and what's next.
+
+## Workflow
+- Propose an approach and wait for approval before writing code
+- After each function, summarize what it does and what should be verified
+- Flag any assumptions made about data structure or column names
