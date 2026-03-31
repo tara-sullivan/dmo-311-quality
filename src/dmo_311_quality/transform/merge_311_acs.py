@@ -54,7 +54,7 @@ def merge_311_acs(
 if __name__ == '__main__':
     df_311_raw = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_counts.parquet')
     df_acs = pd.read_parquet(PROCESSED_DATA_DIR / 'acs_cd_demographic.parquet')
-    merged = merge_311_acs(df_311_raw, df_acs, validate='m:1', print_unmatched=True)
+    merged = merge_311_acs(df_311_raw, df_acs, print_unmatched=True, validate='m:1')
     print(merged.head())
 
 
@@ -83,7 +83,8 @@ def complaints_per_capita(
     df_window = df_311.loc[(yyyymm >= _WINDOW_START) & (yyyymm <= _WINDOW_END)]
 
     sr_totals = (
-        df_window.groupby('community_board', as_index=False)['sr_count'].sum()
+        df_window.groupby('community_board', as_index=False)['sr_count']
+        .sum()
     )
 
     merged = merge_311_acs(sr_totals, df_acs, acs_cols=['Pop_1E', 'Borough'])

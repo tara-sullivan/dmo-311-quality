@@ -2,7 +2,7 @@
 import pandas as pd
 
 from dmo_311_quality.extract.get_311 import get_sr_counts
-from dmo_311_quality.extract.get_acs import get_acs_demographics
+from dmo_311_quality.extract.get_acs import get_acs_demographics, get_acs_economic
 from dmo_311_quality.extract.get_geo import get_cd_boundaries
 from dmo_311_quality.utils.config_paths import PROCESSED_DATA_DIR
 
@@ -123,6 +123,29 @@ if __name__ == '__main__':
 
 
 # %%
+def extract_acs_economic() -> pd.DataFrame:
+    """Load ACS economic data for NYC community districts and save to parquet.
+
+    Returns:
+        DataFrame with one row per community district (59 rows). Includes
+        median household income, per capita income, and population below poverty.
+    """
+    df = get_acs_economic()
+    out_path = PROCESSED_DATA_DIR / 'acs_cd_economic.parquet'
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_parquet(out_path, index=False, engine='fastparquet')
+    print(f'ACS economic: {len(df):,} rows → {out_path}')
+    return df
+
+
+# %%
+if __name__ == '__main__':
+    if RUN_ALL:
+        df_econ = extract_acs_economic()
+        print(df_econ[['community_board', 'MdHHIncE', 'PerCapIncE', 'PBwPvE']].head())
+
+
+# %%
 def extract_geo() -> pd.DataFrame:
     """Fetch CD boundary polygons and save to parquet with WKT geometry.
 
@@ -163,6 +186,9 @@ def main() -> None:
 
     print('\n--- Extract: ACS demographics ---')
     extract_acs()
+
+    print('\n--- Extract: ACS economic ---')
+    extract_acs_economic()
 
     print('\n--- Extract: community district boundaries ---')
     extract_geo()

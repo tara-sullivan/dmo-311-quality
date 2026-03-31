@@ -39,6 +39,7 @@ The study window is **March 1, 2023 – March 1, 2026**.
 - [ ] Correlation analysis: SR rate vs. race/ethnicity composition, income, other demographic variables
 - [ ] Identify outlier community boards (high/low SR rate relative to demographics)
 - [ ] Add economic ACS variables (median household income, poverty rate) — see `get_acs.py` design notes
+- [ ] Pothole analysis: see if there is a relationship between potholes complaints, income, and 
 
 ### Output (format TBD)
 - [ ] Decide on final output format: GitHub Pages, PDF report, or both
@@ -51,3 +52,8 @@ The study window is **March 1, 2023 – March 1, 2026**.
 - [ ] Extend further to other complaint types as needed
 - [ ] Time series analysis: monthly SR complaint trends by community board — has representation improved or worsened over the study window?
 - [ ] Evaluate additional complaint types and descriptors beyond potholes and rodents
+
+## Open Questions
+- High poverty CDs show more complaints — possibly driven by heat/hot water 
+  complaints in the Bronx. Investigate complaint type breakdown within 
+  high-poverty districts before drawing conclusions about reporting behavior.

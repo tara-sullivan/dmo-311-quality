@@ -109,6 +109,17 @@ if __name__ == '__main__':
         print(f'{geo_id!r} → {make_community_board_key(geo_id)!r}')
 
 
+# Columns to retain from the Economic ACS file, plus the join key.
+ECONOMIC_COLS: list[str] = [
+    'GeoID',
+    'GeogName',
+    'Borough',
+    'MdHHIncE',     # Median household income
+    'PerCapIncE',   # Per capita income
+    'PBwPvE',       # Population below poverty level (poverty status determined)
+]
+
+
 # %%
 def get_acs_demographics() -> pd.DataFrame:
     """Load and clean ACS demographic data for NYC community districts.
@@ -138,5 +149,34 @@ if __name__ == '__main__':
     df = get_acs_demographics()
     print(f'{len(df):,} rows | columns: {df.columns.tolist()}')
     print(df[['community_board', 'Pop_1E', 'Borough']].head())
+
+
+# %%
+def get_acs_economic() -> pd.DataFrame:
+    """Load and clean ACS economic data for NYC community districts.
+
+    Reads the CommunityDistrict-PUMA Economic xlsx, filters to community
+    district rows (CDTAType == 'CD'), builds a community_board join key that
+    matches the 311 dataset, and returns income and poverty estimate columns.
+
+    Returns:
+        DataFrame with one row per community district (59 rows). Includes
+        community_board, GeoID, GeogName, Borough, MdHHIncE, PerCapIncE,
+        and PBwPvE (population below poverty level).
+    """
+    df = load_acs_sheet('Economic')
+
+    df = df[df['CDTAType'] == 'CD'].copy()
+
+    df['community_board'] = df['GeoID'].apply(make_community_board_key)
+
+    return df[['community_board'] + ECONOMIC_COLS].reset_index(drop=True)
+
+
+# %%
+if __name__ == '__main__':
+    df_econ = get_acs_economic()
+    print(f'{len(df_econ):,} rows | columns: {df_econ.columns.tolist()}')
+    print(df_econ[['community_board', 'MdHHIncE', 'PerCapIncE', 'PBwPvE']].head(10))
 
 # %%
