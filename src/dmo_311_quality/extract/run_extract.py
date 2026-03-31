@@ -17,12 +17,12 @@ POTHOLE_WHERE = (
 )
 
 RODENT_WHERE = (
-    "(LOWER(complaint_type) LIKE 'rodent')"
-    " OR (LOWER(complaint_type) LIKE 'rat')"
-    " OR (LOWER(descriptor) LIKE 'rodent')"
-    " OR (LOWER(descriptor) LIKE 'rat')"
-    " OR (LOWER(descriptor_2) LIKE 'rodent')"
-    " OR (LOWER(descriptor_2) LIKE 'rat')"
+    "(LOWER(complaint_type) LIKE '%rodent%')"
+    " OR (LOWER(complaint_type) LIKE '%rat%')"
+    " OR (LOWER(descriptor) LIKE '%rodent%')"
+    " OR (LOWER(descriptor) LIKE '%rat%')"
+    " OR (LOWER(descriptor_2) LIKE '%rodent%')"
+    " OR (LOWER(descriptor_2) LIKE '%rat%')"
 )
 
 

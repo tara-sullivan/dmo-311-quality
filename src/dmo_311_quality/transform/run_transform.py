@@ -1,7 +1,8 @@
 # %%
 import pandas as pd
 
-from dmo_311_quality.transform.merge_311_acs import complaints_per_capita, enrich_with_economic
+# from dmo_311_quality.transform.merge_311_acs import complaints_per_capita, enrich_with_economic
+from dmo_311_quality.transform.merge_311_acs import complaints_per_capita
 from dmo_311_quality.utils.config_paths import PROCESSED_DATA_DIR
 
 
@@ -36,7 +37,7 @@ if __name__ == '__main__':
 
 
 # %%
-def transform_economic_join() -> pd.DataFrame:
+def transform_economic_join(econ_vars = ['MdHHIncE', 'PerCapIncE', 'PBwPvE']) -> pd.DataFrame:
     """Join ACS economic variables into per-capita complaints and save.
 
     Loads 311 per-capita data, ACS demographics, and ACS economic data,
@@ -50,9 +51,15 @@ def transform_economic_join() -> pd.DataFrame:
     df_311 = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_counts.parquet')
     df_acs = pd.read_parquet(PROCESSED_DATA_DIR / 'acs_cd_demographic.parquet')
     df_econ = pd.read_parquet(PROCESSED_DATA_DIR / 'acs_cd_economic.parquet')
+    df_econ = df_econ[['community_board'] + econ_vars]
 
-    df_pc = complaints_per_capita(df_311, df_acs)
-    df = enrich_with_economic(df_pc, df_econ)
+    df = complaints_per_capita(df_311, df_acs)
+    # add in economic varaibles
+    df = pd.merge(df, df_econ, on='community_board', how='left', validate='1:1')
+    # calculate poverty rate if PBwPvE is included
+    if 'PBwPvE' in econ_vars:
+        df['poverty_rate'] = df['PBwPvE'] / df['Pop_1E']  # Convert percentage to proportion
+
 
     out_path = PROCESSED_DATA_DIR / '311_acs_economic.parquet'
     out_path.parent.mkdir(parents=True, exist_ok=True)
