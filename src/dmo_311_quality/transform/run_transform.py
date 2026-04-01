@@ -37,7 +37,11 @@ if __name__ == '__main__':
 
 
 # %%
-def transform_economic_join(econ_vars = ['MdHHIncE', 'PerCapIncE', 'PBwPvE']) -> pd.DataFrame:
+def transform_economic_join(
+    df_311=None,
+    econ_vars=None,
+    out_filename='311_acs_economic.parquet',
+) -> pd.DataFrame:
     """Join ACS economic variables into per-capita complaints and save.
 
     Loads 311 per-capita data, ACS demographics, and ACS economic data,
@@ -48,7 +52,10 @@ def transform_economic_join(econ_vars = ['MdHHIncE', 'PerCapIncE', 'PBwPvE']) ->
         DataFrame with one row per community board: community_board, sr_count,
         Pop_1E, Borough, sr_per_1k, MdHHIncE, PerCapIncE, PBwPvE, poverty_rate.
     """
-    df_311 = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_counts.parquet')
+    if econ_vars is None:
+        econ_vars = ['MdHHIncE', 'PerCapIncE', 'PBwPvE']
+    if df_311 is None:
+        df_311 = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_counts.parquet')
     df_acs = pd.read_parquet(PROCESSED_DATA_DIR / 'acs_cd_demographic.parquet')
     df_econ = pd.read_parquet(PROCESSED_DATA_DIR / 'acs_cd_economic.parquet')
     df_econ = df_econ[['community_board'] + econ_vars]
