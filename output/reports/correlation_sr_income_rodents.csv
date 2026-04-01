@@ -1,0 +1,4 @@
+variable,pearson_r,p_value
+Median Household Income,-0.127,0.3364
+Per Capita Income,0.016,0.903
+Poverty Rate,0.33,0.0108
