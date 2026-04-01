@@ -179,4 +179,121 @@ if __name__ == '__main__':
     print(f'{len(df_econ):,} rows | columns: {df_econ.columns.tolist()}')
     print(df_econ[['community_board', 'MdHHIncE', 'PerCapIncE', 'PBwPvE']].head(10))
 
+
+# %%
+def parse_language_district(cd_str: str) -> list[str]:
+    """Convert a language-file Community District string to community_board keys.
+
+    Handles single-CD rows (e.g. 'BX CD 4' → ['04 BRONX']) and compound rows
+    where one PUMA covers two CDs (e.g. 'BX CDs 1 & 2' → ['01 BRONX', '02 BRONX']).
+
+    Args:
+        cd_str: Community District string from the DCP language xlsx, e.g.
+            'BX CD 4', 'MN CDs 5 & 6'.
+
+    Returns:
+        List of community_board strings in '## BOROUGH' format.
+    """
+    parts = cd_str.strip().split()
+    borough = BOROUGH_CODE_MAP[parts[0]]
+
+    if parts[1] == 'CDs':
+        # Compound: e.g. ['BX', 'CDs', '1', '&', '2']
+        return [f'{int(parts[2]):02d} {borough}', f'{int(parts[4]):02d} {borough}']
+    else:
+        # Single: e.g. ['BX', 'CD', '4']
+        return [f'{int(parts[2]):02d} {borough}']
+
+
+# %%
+if __name__ == '__main__':
+    examples = ['BX CD 4', 'BX CDs 1 & 2', 'MN CDs 5 & 6', 'SI CD 1']
+    for ex in examples:
+        print(f'{ex!r} → {parse_language_district(ex)}')
+
+
+# %%
+def get_acs_languages() -> pd.DataFrame:
+    """Load and clean ACS language/LEP data for NYC community districts.
+
+    Reads the DCP CommunityDistrict-PUMA language xlsx ('English Lang Use &
+    Proficiency' sheet), extracts estimates for total population 5+, English-
+    only speakers, non-English speakers, and Limited English Proficiency (LEP)
+    count, then expands compound-PUMA rows into one row per community district.
+
+    Note: Four PUMAs cover two community districts each. Those pairs share the
+    same language profile — sub-PUMA disaggregation is not available in this
+    source.
+
+    Returns:
+        DataFrame with one row per community district (59 rows). Columns:
+        community_board, pop_5plus, eng_only, non_eng, lep_count, lep_rate.
+    """
+    lang_dir = ACS_DIR / 'CommunityDistrict-PUMA' / 'Languages'
+    xlsx_files = list(lang_dir.glob('dcp-lang-spk-at-home-puma_*.xlsx'))
+
+    if not xlsx_files:
+        raise FileNotFoundError(f'No dcp-lang-spk-at-home-puma_*.xlsx found in {lang_dir}')
+    if len(xlsx_files) > 1:
+        raise ValueError(
+            f'Expected one matching xlsx in {lang_dir}, found {len(xlsx_files)}: '
+            + ', '.join(f.name for f in xlsx_files)
+        )
+
+    # Rows 0-3: title, subtitle, two blank rows; rows 4-5: two-level header; row 6+: data
+    df_raw = pd.read_excel(
+        xlsx_files[0],
+        sheet_name='English Lang Use & Proficiency',
+        header=None,
+        skiprows=4,
+    )
+
+    # Skip the two header rows, keep data only
+    df = df_raw.iloc[2:].reset_index(drop=True)
+
+    # Note: excel file has multiple column lines; not sure there is a better way to do this
+    # Select estimate columns by verified position:
+    # 2: Community District, 3: Total pop 5+, 7: Eng only, 11: Non-Eng, 19: LEP
+    df = df[[2, 3, 7, 11, 19]].copy()
+    df.columns = ['cd_str', 'pop_5plus', 'eng_only', 'non_eng', 'lep_count']
+
+    # Drop footer rows (source notes, blank rows)
+    valid_prefixes = tuple(BOROUGH_CODE_MAP.keys())
+    df = df[df['cd_str'].apply(
+        lambda x: isinstance(x, str) and x.startswith(valid_prefixes)
+    )].copy()
+
+    # Expand compound-PUMA rows into one row per community board
+    rows = []
+    for _, row in df.iterrows():
+        for cb in parse_language_district(row['cd_str']):
+            rows.append({
+                'community_board': cb,
+                'pop_5plus': row['pop_5plus'],
+                'eng_only': row['eng_only'],
+                'non_eng': row['non_eng'],
+                'lep_count': row['lep_count'],
+            })
+
+    result = pd.DataFrame(rows)
+    # rate should be derived from the spreadsheet, not the actualy popuation counts, since some of the community districts are 
+    # combined in data (i.e. MN CDs 1 & 2)
+    result['lep_rate'] = result['lep_count'] / result['pop_5plus']
+
+    result = result[['community_board', 'lep_rate']]
+
+    return result.reset_index(drop=True)
+
+
+# %%
+if __name__ == '__main__':
+    df_lang = get_acs_languages()
+    print(f'{len(df_lang):,} rows | columns: {df_lang.columns.tolist()}')
+    print(df_lang[['community_board', 'lep_rate']].sort_values('lep_rate', ascending=False).head(10))
+    # Verify compound-CD expansion: paired CDs should share identical stats
+    compound_cbs = ['01 BRONX', '02 BRONX', '03 BRONX', '06 BRONX',
+                    '01 MANHATTAN', '02 MANHATTAN', '05 MANHATTAN', '06 MANHATTAN']
+    print('\nCompound-CD pairs (lep_rate should match within each pair):')
+    print(df_lang[df_lang['community_board'].isin(compound_cbs)][['community_board', 'lep_rate']].to_string(index=False))
+
 # %%

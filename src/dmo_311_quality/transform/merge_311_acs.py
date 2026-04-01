@@ -1,11 +1,7 @@
 # %%
 import pandas as pd
 
-from dmo_311_quality.utils.config_paths import PROCESSED_DATA_DIR
-
-# March 2025–March 2026 inclusive, encoded as YYYYMM integers
-_WINDOW_START = 202503
-_WINDOW_END = 202603
+from dmo_311_quality.utils.config_paths import PROCESSED_DATA_DIR, SR_WINDOW_START, SR_WINDOW_END
 
 
 # %%
@@ -52,7 +48,7 @@ def merge_311_acs(
 
 # %%
 if __name__ == '__main__':
-    df_311_raw = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_counts.parquet')
+    df_311_raw = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_counts_ym.parquet')
     df_acs = pd.read_parquet(PROCESSED_DATA_DIR / 'acs_cd_demographic.parquet')
     merged = merge_311_acs(df_311_raw, df_acs, print_unmatched=True, validate='m:1')
     print(merged.head())
@@ -62,25 +58,32 @@ if __name__ == '__main__':
 def complaints_per_capita(
     df_311: pd.DataFrame,
     df_acs: pd.DataFrame,
+    window_start: int = SR_WINDOW_START,
+    window_end: int = SR_WINDOW_END,
 ) -> pd.DataFrame:
     """Compute 311 complaints per 1,000 residents by community board.
 
-    Filters 311 data to March 2025–March 2026 inclusive, aggregates to one
-    row per community board, joins ACS population, and computes a per-capita
-    rate. Rows with no ACS match (e.g. '0 Unspecified') are dropped.
+    Filters 311 data to the given window (YYYYMM integers, inclusive),
+    aggregates to one row per community board, joins ACS population, and
+    computes a per-capita rate. Rows with no ACS match (e.g. '0 Unspecified')
+    are dropped.
 
     Args:
         df_311: Monthly 311 SR counts with columns: community_board, month,
             year, sr_count.
         df_acs: ACS demographic data with columns: community_board, Pop_1E,
             Borough (as returned by get_acs_demographics()).
+        window_start: Start of aggregation window as YYYYMM integer (inclusive).
+            Defaults to SR_WINDOW_START from config_paths.
+        window_end: End of aggregation window as YYYYMM integer (inclusive).
+            Defaults to SR_WINDOW_END from config_paths.
 
     Returns:
         DataFrame with one row per community board (up to 59 rows). Columns:
         community_board, sr_count, Pop_1E, Borough, sr_per_1k.
     """
     yyyymm = df_311['year'] * 100 + df_311['month']
-    df_window = df_311.loc[(yyyymm >= _WINDOW_START) & (yyyymm <= _WINDOW_END)]
+    df_window = df_311.loc[(yyyymm >= window_start) & (yyyymm <= window_end)]
 
     sr_totals = (
         df_window.groupby('community_board', as_index=False)['sr_count']
@@ -102,7 +105,7 @@ def complaints_per_capita(
 
 # %%
 if __name__ == '__main__':
-    df_311 = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_counts.parquet')
+    df_311 = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_counts_ym.parquet')
     df_acs = pd.read_parquet(PROCESSED_DATA_DIR / 'acs_cd_demographic.parquet')
 
     df = complaints_per_capita(df_311, df_acs)

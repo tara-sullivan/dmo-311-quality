@@ -3,7 +3,7 @@ import pandas as pd
 
 # from dmo_311_quality.transform.merge_311_acs import complaints_per_capita, enrich_with_economic
 from dmo_311_quality.transform.merge_311_acs import complaints_per_capita
-from dmo_311_quality.utils.config_paths import PROCESSED_DATA_DIR
+from dmo_311_quality.utils.config_paths import PROCESSED_DATA_DIR, SR_WINDOW_START, SR_WINDOW_END
 
 
 # %%
@@ -18,10 +18,10 @@ def transform_complaints_per_capita() -> pd.DataFrame:
         DataFrame with one row per community board: community_board, sr_count,
         Pop_1E, Borough, sr_per_1k.
     """
-    df_311 = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_counts.parquet')
+    df_311 = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_counts_ym.parquet')
     df_acs = pd.read_parquet(PROCESSED_DATA_DIR / 'acs_cd_demographic.parquet')
 
-    df = complaints_per_capita(df_311, df_acs)
+    df = complaints_per_capita(df_311, df_acs, window_start=SR_WINDOW_START, window_end=SR_WINDOW_END)
 
     out_path = PROCESSED_DATA_DIR / '311_acs_per_capita.parquet'
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -37,16 +37,10 @@ if __name__ == '__main__':
 
 
 # %%
-<<<<<<< HEAD
-def transform_economic_join(
-    df_311=None,
-    econ_vars=None,
-    out_filename='311_acs_economic.parquet',
-=======
 _SR_PARQUET: dict[str, str] = {
-    'all': '311_sr_counts',
-    'potholes': '311_sr_potholes',
-    'rodents': '311_sr_rodents',
+    'all': '311_sr_counts_ym',
+    'potholes': '311_sr_potholes_ym',
+    'rodents': '311_sr_rodents_ym',
 }
 
 
@@ -54,7 +48,6 @@ _SR_PARQUET: dict[str, str] = {
 def transform_economic_join(
     complaint_type: str = 'all',
     econ_vars: list[str] = ['MdHHIncE', 'PerCapIncE', 'PBwPvE'],
->>>>>>> a1d5f3706f59018a8c791437bce4af3727e996ed
 ) -> pd.DataFrame:
     """Join ACS economic variables into per-capita complaints and save.
 
@@ -74,20 +67,13 @@ def transform_economic_join(
         DataFrame with one row per community board: community_board, sr_count,
         Pop_1E, Borough, sr_per_1k, MdHHIncE, PerCapIncE, PBwPvE, poverty_rate.
     """
-<<<<<<< HEAD
-    if econ_vars is None:
-        econ_vars = ['MdHHIncE', 'PerCapIncE', 'PBwPvE']
-    if df_311 is None:
-        df_311 = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_counts.parquet')
-=======
     sr_file = _SR_PARQUET[complaint_type]
     df_311 = pd.read_parquet(PROCESSED_DATA_DIR / f'{sr_file}.parquet')
->>>>>>> a1d5f3706f59018a8c791437bce4af3727e996ed
     df_acs = pd.read_parquet(PROCESSED_DATA_DIR / 'acs_cd_demographic.parquet')
     df_econ = pd.read_parquet(PROCESSED_DATA_DIR / 'acs_cd_economic.parquet')
     df_econ = df_econ[['community_board'] + econ_vars]
 
-    df = complaints_per_capita(df_311, df_acs)
+    df = complaints_per_capita(df_311, df_acs, window_start=SR_WINDOW_START, window_end=SR_WINDOW_END)
     # add in economic varaibles
     df = pd.merge(df, df_econ, on='community_board', how='left', validate='1:1')
     # calculate poverty rate if PBwPvE is included
@@ -109,6 +95,46 @@ if __name__ == '__main__':
 
 
 # %%
+def transform_language_join(complaint_type: str = 'all') -> pd.DataFrame:
+    """Join ACS language/LEP data into per-capita complaints and save.
+
+    Loads 311 SR counts for the given complaint_type, computes per-capita
+    rates, then joins lep_rate from the ACS language parquet.
+
+    Saves to data/processed/311_acs_language.parquet (complaint_type='all') or
+    data/processed/311_acs_language_{complaint_type}.parquet otherwise.
+
+    Args:
+        complaint_type: One of 'all', 'potholes', 'rodents'. Controls which
+            311 SR parquet is loaded and where the output is saved.
+
+    Returns:
+        DataFrame with one row per community board: community_board, sr_count,
+        Pop_1E, Borough, sr_per_1k, lep_rate.
+    """
+    sr_file = _SR_PARQUET[complaint_type]
+    df_311 = pd.read_parquet(PROCESSED_DATA_DIR / f'{sr_file}.parquet')
+    df_acs = pd.read_parquet(PROCESSED_DATA_DIR / 'acs_cd_demographic.parquet')
+    df_lang = pd.read_parquet(PROCESSED_DATA_DIR / 'acs_cd_language.parquet')
+
+    df = complaints_per_capita(df_311, df_acs, window_start=SR_WINDOW_START, window_end=SR_WINDOW_END)
+    df = pd.merge(df, df_lang, on='community_board', how='left', validate='1:1')
+
+    suffix = '' if complaint_type == 'all' else f'_{complaint_type}'
+    out_path = PROCESSED_DATA_DIR / f'311_acs_language{suffix}.parquet'
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_parquet(out_path, index=False, engine='fastparquet')
+    print(f'Language join ({complaint_type}): {len(df):,} rows → {out_path}')
+    return df
+
+
+# %%
+if __name__ == '__main__':
+    df = transform_language_join('all')
+    print(df[['community_board', 'sr_per_1k', 'lep_rate']].sort_values('sr_per_1k', ascending=False).head(10))
+
+
+# %%
 def main() -> None:
     """Run all transform steps in order and save outputs to data/processed/."""
     print('--- Transform: complaints per capita ---')
@@ -117,6 +143,10 @@ def main() -> None:
     print('\n--- Transform: economic join ---')
     for ct in _SR_PARQUET:
         transform_economic_join(ct)
+
+    print('\n--- Transform: language join ---')
+    for ct in _SR_PARQUET:
+        transform_language_join(ct)
 
     print('\nTransform complete.')
 

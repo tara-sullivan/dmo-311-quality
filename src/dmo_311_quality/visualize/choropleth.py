@@ -13,7 +13,7 @@ FIGURES_DIR = ROOT_DIR / 'output' / 'figures'
 
 ## %%
 if __name__ == '__main__':
-    df_311 = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_counts.parquet')
+    df_311 = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_counts_ym.parquet')
     df_acs = pd.read_parquet(PROCESSED_DATA_DIR / 'acs_cd_demographic.parquet')
 
     cd_gdf = get_cd_boundaries()
@@ -104,7 +104,7 @@ if __name__ == '__main__':
 
 # %%
 if __name__ == '__main__':
-    df_potholes = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_potholes.parquet')
+    df_potholes = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_potholes_ym.parquet')
 
     df_pot = sr_per_1k(df_potholes, df_acs)
     gdf_pot = gdf_per_1k(cd_gdf, df_pot)
@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
 # %%
 if __name__ == '__main__':
-    df_rodents = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_rodents.parquet')
+    df_rodents = pd.read_parquet(PROCESSED_DATA_DIR / '311_sr_rodents_ym.parquet')
 
     df_rod = sr_per_1k(df_rodents, df_acs)
     gdf_rod = gdf_per_1k(cd_gdf, df_rod)

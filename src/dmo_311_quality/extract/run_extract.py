@@ -2,7 +2,7 @@
 import pandas as pd
 
 from dmo_311_quality.extract.get_311 import get_sr_counts
-from dmo_311_quality.extract.get_acs import get_acs_demographics, get_acs_economic
+from dmo_311_quality.extract.get_acs import get_acs_demographics, get_acs_economic, get_acs_languages
 from dmo_311_quality.extract.get_geo import get_cd_boundaries
 from dmo_311_quality.utils.config_paths import PROCESSED_DATA_DIR
 
@@ -34,7 +34,7 @@ def extract_311() -> pd.DataFrame:
         DataFrame with columns: community_board, month, year, sr_count.
     """
     df = get_sr_counts()
-    out_path = PROCESSED_DATA_DIR / '311_sr_counts.parquet'
+    out_path = PROCESSED_DATA_DIR / '311_sr_counts_ym.parquet'
     out_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(out_path, index=False, engine='fastparquet')
     print(f'311 counts: {len(df):,} rows → {out_path}')
@@ -82,7 +82,7 @@ def extract_311_potholes() -> pd.DataFrame:
         DataFrame with columns: community_board, month, year, sr_count.
     """
     df = get_sr_counts(where_extra=POTHOLE_WHERE)
-    out_path = PROCESSED_DATA_DIR / '311_sr_potholes.parquet'
+    out_path = PROCESSED_DATA_DIR / '311_sr_potholes_ym.parquet'
     out_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(out_path, index=False, engine='fastparquet')
     print(f'311 pothole counts: {len(df):,} rows → {out_path}')
@@ -108,7 +108,7 @@ def extract_311_rodents() -> pd.DataFrame:
         DataFrame with columns: community_board, month, year, sr_count.
     """
     df = get_sr_counts(where_extra=RODENT_WHERE)
-    out_path = PROCESSED_DATA_DIR / '311_sr_rodents.parquet'
+    out_path = PROCESSED_DATA_DIR / '311_sr_rodents_ym.parquet'
     out_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(out_path, index=False, engine='fastparquet')
     print(f'311 rodent counts: {len(df):,} rows → {out_path}')
@@ -146,6 +146,29 @@ if __name__ == '__main__':
 
 
 # %%
+def extract_acs_languages() -> pd.DataFrame:
+    """Load ACS language/LEP data for NYC community districts and save to parquet.
+
+    Returns:
+        DataFrame with one row per community district (59 rows). Includes
+        community_board and lep_rate (Limited English Proficiency share of pop 5+).
+    """
+    df = get_acs_languages()
+    out_path = PROCESSED_DATA_DIR / 'acs_cd_language.parquet'
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_parquet(out_path, index=False, engine='fastparquet')
+    print(f'ACS language/LEP: {len(df):,} rows → {out_path}')
+    return df
+
+
+# %%
+if __name__ == '__main__':
+    if RUN_ALL:
+        df_lang = extract_acs_languages()
+        print(df_lang[['community_board', 'lep_rate']].sort_values('lep_rate', ascending=False).head())
+
+
+# %%
 def extract_geo() -> pd.DataFrame:
     """Fetch CD boundary polygons and save to parquet with WKT geometry.
 
@@ -173,25 +196,56 @@ if __name__ == '__main__':
 
 
 # %%
-def main() -> None:
-    """Run all extract steps in order and save outputs to data/processed/."""
-    print('--- Extract: 311 service requests ---')
-    extract_311()
+def main(
+    run_311: bool = True,
+    run_311_potholes: bool = True,
+    run_311_rodents: bool = True,
+    run_acs: bool = True,
+    run_acs_economic: bool = True,
+    run_acs_languages: bool = True,
+    run_geo: bool = True,
+) -> None:
+    """Run extract steps in order and save outputs to data/processed/.
 
-    print('\n--- Extract: 311 pothole service requests ---')
-    extract_311_potholes()
+    All steps run by default. Pass False for any step to skip it, e.g.:
+        main(run_311=False, run_311_potholes=False, run_311_rodents=False)
 
-    print('\n--- Extract: 311 rodent service requests ---')
-    extract_311_rodents()
+    Args:
+        run_311: Pull all 311 SR counts from Socrata.
+        run_311_potholes: Pull pothole SR counts from Socrata.
+        run_311_rodents: Pull rodent SR counts from Socrata.
+        run_acs: Load ACS demographic data from local xlsx.
+        run_acs_economic: Load ACS economic data from local xlsx.
+        run_acs_languages: Load ACS language/LEP data from local xlsx.
+        run_geo: Fetch community district boundary polygons.
+    """
+    if run_311:
+        print('--- Extract: 311 service requests ---')
+        extract_311()
 
-    print('\n--- Extract: ACS demographics ---')
-    extract_acs()
+    if run_311_potholes:
+        print('\n--- Extract: 311 pothole service requests ---')
+        extract_311_potholes()
 
-    print('\n--- Extract: ACS economic ---')
-    extract_acs_economic()
+    if run_311_rodents:
+        print('\n--- Extract: 311 rodent service requests ---')
+        extract_311_rodents()
 
-    print('\n--- Extract: community district boundaries ---')
-    extract_geo()
+    if run_acs:
+        print('\n--- Extract: ACS demographics ---')
+        extract_acs()
+
+    if run_acs_economic:
+        print('\n--- Extract: ACS economic ---')
+        extract_acs_economic()
+
+    if run_acs_languages:
+        print('\n--- Extract: ACS language/LEP ---')
+        extract_acs_languages()
+
+    if run_geo:
+        print('\n--- Extract: community district boundaries ---')
+        extract_geo()
 
     print('\nExtract complete.')
 
@@ -199,5 +253,6 @@ def main() -> None:
 # %%
 if __name__ == '__main__':
     main()
+    # main(run_311=False, run_311_potholes=False, run_311_rodents=False, run_geo=False) 
 
 # %%

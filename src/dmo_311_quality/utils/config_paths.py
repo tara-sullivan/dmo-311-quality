@@ -28,6 +28,10 @@ SRC_DIR = ROOT_DIR / 'src'
 
 ACS_DIR = RAW_DATA_DIR / '5-yr-ACS-2023'
 
+# Default analysis window for 311 SR aggregation, encoded as YYYYMM integers
+SR_WINDOW_START = 202503  # March 2025
+SR_WINDOW_END = 202603    # March 2026
+
 # %%
 if __name__ == '__main__':
 
