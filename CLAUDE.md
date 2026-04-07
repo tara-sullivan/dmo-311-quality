@@ -9,7 +9,7 @@ Assess whether NYC 311 complaints systematically under/over-represent neighborho
 - ACS data: local xlsx files in `data/raw/`
 
 ## Structure
-src/dmo_311_quality/
+src/dmo_311_quality/ex
   extract/      # API pulls and local file reads only
   transform/    # merges and analytical datasets
   visualize/    # figure generation → output/figures/
