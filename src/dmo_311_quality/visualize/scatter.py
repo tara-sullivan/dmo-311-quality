@@ -5,7 +5,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.axes import Axes
 
-from dmo_311_quality.utils.config_paths import PROCESSED_DATA_DIR, ROOT_DIR
+from dmo_311_quality.utils.config_paths import (
+    PROCESSED_DATA_DIR, ROOT_DIR, SR_WINDOW_START, SR_WINDOW_END,
+)
 
 # %%
 FIGURES_DIR = ROOT_DIR / 'output' / 'figures'
@@ -17,6 +19,39 @@ BOROUGH_COLORS: dict[str, str] = {
     'Queens': '#ff7f00',
     'Staten Island': '#984ea3',
 }
+
+_COMPLAINT_LABELS: dict[str, str] = {
+    'all': 'All SRs',
+    'potholes': 'Potholes',
+    'rodents': 'Rodents',
+}
+
+_DIMENSION_CONFIG: dict[str, dict] = {
+    'economic': {
+        'parquet_prefix': '311_acs_economic',
+        'output_stem': 'scatter_sr_income',
+        'panels': [
+            {'x_col': 'MdHHIncE',    'xlabel': 'Median Household Income ($)', 'title': 'SR Rate vs. Median Household Income'},
+            {'x_col': 'poverty_rate', 'xlabel': 'Poverty Rate',                'title': 'SR Rate vs. Poverty Rate'},
+        ],
+        'suptitle_prefix': 'SR Rate vs. Economic Variables',
+    },
+    'language': {
+        'parquet_prefix': '311_acs_language',
+        'output_stem': 'scatter_sr_language',
+        'panels': [
+            {'x_col': 'lep_rate', 'xlabel': 'LEP Rate', 'title': 'SR Rate vs. LEP Rate'},
+        ],
+        'suptitle_prefix': 'SR Rate vs. LEP Rate',
+    },
+}
+
+
+def _fmt_yyyymm(yyyymm: int) -> str:
+    """Convert YYYYMM integer to 'Mon YYYY' string (e.g. 202503 → 'Mar 2025')."""
+    import calendar
+    year, month = divmod(yyyymm, 100)
+    return f'{calendar.month_abbr[month]} {year}'
 
 
 # %%
@@ -66,47 +101,57 @@ def make_scatter(
 
 
 # %%
-_COMPLAINT_LABELS: dict[str, str] = {
-    'all': 'All SRs',
-    'potholes': 'Potholes',
-    'rodents': 'Rodents',
-}
+def plot_scatter(complaint_type: str = 'all', dimension: str = 'economic') -> None:
+    """Build and save a scatter figure for the given complaint type and dimension.
 
-if __name__ == '__main__':
+    Loads the appropriate enriched parquet, draws one panel per dimension
+    variable, and saves to output/figures/.
+
+    Args:
+        complaint_type: One of 'all', 'potholes', 'rodents'.
+        dimension: One of 'economic' or 'language'.
+    """
+    cfg = _DIMENSION_CONFIG[dimension]
+    suffix = '' if complaint_type == 'all' else f'_{complaint_type}'
+    df = pd.read_parquet(PROCESSED_DATA_DIR / f'{cfg["parquet_prefix"]}{suffix}.parquet')
+
+    label = _COMPLAINT_LABELS[complaint_type]
+    date_range = f'{_fmt_yyyymm(SR_WINDOW_START)} – {_fmt_yyyymm(SR_WINDOW_END)}'
+    n_panels = len(cfg['panels'])
+
+    fig, axes = plt.subplots(1, n_panels, figsize=(7 * n_panels, 6))
+    if n_panels == 1:
+        axes = [axes]
+
+    fig.suptitle(
+        f'311 {cfg["suptitle_prefix"]} by Community Board — {label}\n({date_range})',
+        fontsize=13,
+        y=1.01,
+    )
+
+    for ax, panel in zip(axes, cfg['panels']):
+        make_scatter(
+            ax, df,
+            x_col=panel['x_col'],
+            y_col='sr_per_1k',
+            xlabel=panel['xlabel'],
+            ylabel='SR per 1,000 Residents',
+            title=panel['title'],
+        )
+
+    plt.tight_layout()
+
     FIGURES_DIR.mkdir(parents=True, exist_ok=True)
+    out_path = FIGURES_DIR / f'{cfg["output_stem"]}_{complaint_type}.png'
+    fig.savefig(out_path, dpi=150, bbox_inches='tight')
+    plt.close(fig)
+    print(f'Saved figure → {out_path}')
 
-    for complaint_type, label in _COMPLAINT_LABELS.items():
-        suffix = '' if complaint_type == 'all' else f'_{complaint_type}'
-        df = pd.read_parquet(PROCESSED_DATA_DIR / f'311_acs_economic{suffix}.parquet')
 
-        fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-        fig.suptitle(
-            f'311 SR Rate vs. Economic Variables by Community Board — {label}\n(Mar 2025 – Mar 2026)',
-            fontsize=13,
-            y=1.01,
-        )
-
-        make_scatter(
-            axes[0], df,
-            x_col='MdHHIncE', y_col='sr_per_1k',
-            xlabel='Median Household Income ($)',
-            ylabel='SR per 1,000 Residents',
-            title='SR Rate vs. Median Household Income',
-        )
-
-        make_scatter(
-            axes[1], df,
-            x_col='poverty_rate', y_col='sr_per_1k',
-            xlabel='Poverty Rate',
-            ylabel='SR per 1,000 Residents',
-            title='SR Rate vs. Poverty Rate',
-        )
-
-        plt.tight_layout()
-
-        out_path = FIGURES_DIR / f'scatter_sr_income_{complaint_type}.png'
-        fig.savefig(out_path, dpi=150, bbox_inches='tight')
-        plt.close(fig)
-        print(f'Saved figure to {out_path}')
+# %%
+if __name__ == '__main__':
+    for dim in ['economic', 'language']:
+        for ct in _COMPLAINT_LABELS:
+            plot_scatter(ct, dim)
 
 # %%
